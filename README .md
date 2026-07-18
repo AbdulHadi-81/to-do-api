@@ -69,13 +69,13 @@ content-type: application/json
 
 ## Swagger UI
 
-```
-![Swagger UI screenshot](Swagger_1.jpeg)
-```
 
-```
+![Swagger UI screenshot](Swagger_1.jpeg)
+
+
+
 ![Swagger UI screenshot](Swagger_2.jpeg)
-```
+
 
 ## Notes on in-memory storage
 
