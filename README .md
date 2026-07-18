@@ -63,6 +63,7 @@ content-length: 40
 content-type: application/json
 
 {"id":5,"title":"Buy milk","done":false}
+```
 
 ---
 
@@ -75,8 +76,6 @@ content-type: application/json
 ```
 ![Swagger UI screenshot](Swagger_2.jpeg)
 ```
-
-
 
 ## Notes on in-memory storage
 
