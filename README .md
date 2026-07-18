@@ -1,7 +1,7 @@
 # Task API
 
 A small CRUD (Create, Read, Update, Delete) API for managing a to-do list, built with **FastAPI** and Python.
-Data is stored **in memory** — it resets whenever the server restarts (no database yet, that's coming in Week 3).
+Data is stored **in memory** it resets whenever the server restarts (no database yet, that's coming in Week 3).
 
 Built as part of the FlyRank Internship — Backend Track, Week 2, Assignment A1.
 
@@ -76,7 +76,7 @@ content-type: application/json
 ![Swagger UI screenshot](Swagger_2.jpeg)
 ```
 
----
+
 
 ## Notes on in-memory storage
 
