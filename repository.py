@@ -1,55 +1,87 @@
-"""
-Repository layer — the ONLY place that knows how tasks are stored.
-Right now: a plain Python list (in memory).
-Later (Week 3): this file gets replaced with a Postgres version —
-nothing in service.py or main.py will need to change.
-"""
+import os
+import psycopg2
+import psycopg2.extras
+from dotenv import load_dotenv
 
-# Our "database" — just a list living in memory
-_tasks = [
-    {"id": 1, "title": "Buy milk", "done": False},
-    {"id": 2, "title": "Walk the dog", "done": False},
-    {"id": 3, "title": "Finish assignment", "done": True},
-]
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+
+def _get_connection():
+    """Open a fresh connection to Postgres."""
+    return psycopg2.connect(DATABASE_URL)
 
 
 def get_all():
     """Return every task."""
-    return _tasks
+    conn = _get_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT id, title, done FROM tasks ORDER BY id;")
+            return cur.fetchall()
+    finally:
+        conn.close()
 
 
 def get_by_id(task_id: int):
     """Return one task by id, or None if it doesn't exist."""
-    for task in _tasks:
-        if task["id"] == task_id:
-            return task
-    return None
+    conn = _get_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT id, title, done FROM tasks WHERE id = %s;", (task_id,))
+            return cur.fetchone()
+    finally:
+        conn.close()
 
 
 def create(title: str):
-    """Create a new task with the next available id."""
-    next_id = max((t["id"] for t in _tasks), default=0) + 1
-    new_task = {"id": next_id, "title": title, "done": False}
-    _tasks.append(new_task)
-    return new_task
+    """Create a new task. Postgres assigns the id automatically (SERIAL)."""
+    conn = _get_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "INSERT INTO tasks (title, done) VALUES (%s, FALSE) RETURNING id, title, done;",
+                (title,)
+            )
+            new_task = cur.fetchone()
+            conn.commit()
+            return new_task
+    finally:
+        conn.close()
 
 
 def update(task_id: int, title: str | None, done: bool | None):
     """Update an existing task's title and/or done status. Returns None if not found."""
-    task = get_by_id(task_id)
-    if task is None:
-        return None
-    if title is not None:
-        task["title"] = title
-    if done is not None:
-        task["done"] = done
-    return task
+    conn = _get_connection()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            if title is not None:
+                cur.execute(
+                    "UPDATE tasks SET title = %s WHERE id = %s;",
+                    (title, task_id)
+                )
+            if done is not None:
+                cur.execute(
+                    "UPDATE tasks SET done = %s WHERE id = %s;",
+                    (done, task_id)
+                )
+            conn.commit()
+
+            cur.execute("SELECT id, title, done FROM tasks WHERE id = %s;", (task_id,))
+            return cur.fetchone()
+    finally:
+        conn.close()
 
 
 def delete(task_id: int) -> bool:
     """Delete a task by id. Returns True if deleted, False if not found."""
-    task = get_by_id(task_id)
-    if task is None:
-        return False
-    _tasks.remove(task)
-    return True
+    conn = _get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM tasks WHERE id = %s;", (task_id,))
+            deleted = cur.rowcount > 0
+            conn.commit()
+            return deleted
+    finally:
+        conn.close()
